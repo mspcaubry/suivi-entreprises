@@ -1,0 +1,1262 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Suivi Entreprises – BAC Pro</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg: #0b1120;
+      --surface: #111827;
+      --surface-2: #1f2937;
+      --surface-3: #111827;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --primary: #60a5fa;
+      --primary-light: #3b82f6;
+      --success: #22c55e;
+      --success-light: #166534;
+      --danger: #ef4444;
+      --danger-light: #991b1b;
+      --warning: #f59e0b;
+      --warning-light: #b45309;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --font: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      background: #111827;
+      color: var(--text);
+      padding: 16px 16px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    header p {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-top: 2px;
+      color: var(--text-muted);
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    /* NAV TABS */
+    .tabs {
+      display: flex;
+      background: #111827;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      position: sticky;
+      top: 68px;
+      z-index: 99;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px 4px;
+      background: none;
+      border: none;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    /* SECTIONS */
+    .section {
+      display: none;
+      padding: 16px;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    /* CARDS */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title .icon {
+      font-size: 18px;
+    }
+
+    /* FORM */
+    .field {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+
+    label span.req {
+      color: var(--danger);
+    }
+
+    input[type="text"],
+    input[type="tel"],
+    input[type="email"],
+    input[type="date"],
+    select,
+    textarea {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 15px;
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--surface-2);
+      outline: none;
+      transition: border 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--primary);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+    }
+
+    /* SEARCH RESULTS */
+    .search-results {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+      display: none;
+    }
+
+    .search-result {
+      padding: 10px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: background 0.2s;
+      color: var(--text);
+    }
+
+    .search-result:hover {
+      background: var(--primary-light);
+    }
+
+    .search-result:last-child {
+      border-bottom: none;
+    }
+
+    /* MAP */
+    #map {
+      height: 200px;
+      border-radius: var(--radius-sm);
+      margin-top: 10px;
+      display: none;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* CONTACT MOYEN CHIPS */
+    .moyen-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .moyen-chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 14px;
+      border-radius: 20px;
+      border: 1.5px solid rgba(148, 163, 184, 0.25);
+      background: var(--surface-2);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+      color: var(--text);
+    }
+
+    .moyen-chip.selected {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* STATUT REPONSE */
+    .statut-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .statut-chip {
+      flex: 1;
+      min-width: 80px;
+      text-align: center;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid rgba(148, 163, 184, 0.25);
+      background: var(--surface-2);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+      color: var(--text);
+    }
+
+    .statut-chip.sel-attente {
+      border-color: var(--warning);
+      background: var(--warning-light);
+      color: var(--warning);
+      font-weight: 600;
+    }
+
+    .statut-chip.sel-positive {
+      border-color: var(--success);
+      background: var(--success-light);
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .statut-chip.sel-negative {
+      border-color: var(--danger);
+      background: var(--danger-light);
+      color: var(--danger);
+      font-weight: 600;
+    }
+
+    /* PHOTO */
+    .photo-zone {
+      border: 2px dashed rgba(148, 163, 184, 0.4);
+      border-radius: var(--radius-sm);
+      padding: 18px;
+      text-align: center;
+      cursor: pointer;
+      background: var(--surface-2);
+      transition: border 0.2s;
+      position: relative;
+      color: var(--text-muted);
+    }
+
+    .photo-zone:active {
+      border-color: var(--primary);
+    }
+
+    .photo-zone p {
+      font-size: 13px;
+      color: var(--gray-400);
+      margin-top: 6px;
+    }
+
+    .photo-zone input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .photo-preview {
+      width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      border-radius: var(--radius-sm);
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* BOUTONS */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+      font-family: var(--font);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--primary);
+      border: 1.5px solid var(--primary);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-sm {
+      padding: 8px 14px;
+      font-size: 13px;
+      width: auto;
+      display: inline-block;
+      border-radius: var(--radius-sm);
+    }
+
+    /* LISTE FICHES */
+    .fiche-item {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.30);
+      cursor: pointer;
+      transition: box-shadow 0.2s;
+      border-left: 4px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .fiche-item:active {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.13);
+    }
+
+    .fiche-item.statut-En_attente {
+      border-left-color: #f0c000;
+    }
+
+    .fiche-item.statut-Positive {
+      border-left-color: #1a7a4a;
+    }
+
+    .fiche-item.statut-Negative {
+      border-left-color: #c0392b;
+    }
+
+    .fiche-nom {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--gray-800);
+    }
+
+    .fiche-meta {
+      font-size: 12px;
+      color: var(--gray-400);
+      margin-top: 3px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .fiche-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    .badge-attente {
+      background: var(--warning-light);
+      color: var(--warning);
+    }
+
+    .badge-positive {
+      background: var(--success-light);
+      color: var(--success);
+    }
+
+    .badge-negative {
+      background: var(--danger-light);
+      color: var(--danger);
+    }
+
+    .badge-moyen {
+      background: var(--primary-light);
+      color: var(--primary);
+      margin-left: 4px;
+    }
+
+    /* VIDE */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .big {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .empty-state p {
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    /* EXPORT */
+    .export-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stat-box {
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      text-align: center;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.20);
+    }
+
+    .stat-box .num {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .stat-box .lbl {
+      font-size: 12px;
+      color: var(--gray-400);
+      margin-top: 2px;
+    }
+
+    /* MODAL DETAIL */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 200;
+      overflow-y: auto;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .modal {
+      background: var(--bg);
+      width: 100%;
+      min-height: 100vh;
+      padding: 0 0 40px;
+    }
+
+    .modal-header {
+      background: #0f172a;
+      color: var(--text);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+    }
+
+    .modal-close {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-body {
+      padding: 16px;
+    }
+
+    .detail-row {
+      margin-bottom: 14px;
+    }
+
+    .detail-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+    }
+
+    .detail-val {
+      font-size: 15px;
+      color: var(--gray-800);
+    }
+
+    .detail-sep {
+      height: 1px;
+      background: var(--gray-200);
+      margin: 16px 0;
+    }
+
+    /* ELEVE INFO */
+    .eleve-input-zone {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.20);
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #111827;
+      color: var(--text);
+      padding: 11px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      z-index: 999;
+      transition: transform 0.3s;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* SEARCH */
+    .search-bar {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 9px 16px;
+      font-size: 14px;
+      font-family: var(--font);
+      background: var(--surface-2);
+      color: var(--text);
+      outline: none;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .search-bar:focus {
+      border-color: var(--primary-mid);
+    }
+
+    /* FILTER PILLS */
+    .filter-pills {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-bottom: 14px;
+    }
+
+    .filter-pills::-webkit-scrollbar {
+      display: none;
+    }
+
+    .pill {
+      white-space: nowrap;
+      padding: 6px 14px;
+      border-radius: 14px;
+      border: 1.5px solid rgba(148, 163, 184, 0.24);
+      font-size: 13px;
+      background: var(--surface-2);
+      cursor: pointer;
+      font-family: var(--font);
+      color: var(--text);
+    }
+
+    .pill.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+      font-weight: 600;
+    }
+
+    .info-banner {
+      background: rgba(59, 130, 246, 0.12);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--primary);
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="header-row">
+      <div>
+        <h1>📋 Suivi Entreprises</h1>
+        <p id="header-eleve">BAC Pro – Recherche de stage/emploi</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('liste')">🏢 Mes fiches</button>
+    <button class="tab-btn" onclick="switchTab('ajout')">➕ Ajouter</button>
+    <button class="tab-btn" onclick="switchTab('export')">📤 Exporter</button>
+  </div>
+
+  <!-- ==================== LISTE ==================== -->
+  <div id="tab-liste" class="section active">
+    <div style="padding-top:4px">
+      <input class="search-bar" type="search" placeholder="🔍 Rechercher une entreprise..." oninput="renderListe()">
+      <div class="filter-pills">
+        <button class="pill active" data-filter="tous" onclick="setFilter('tous',this)">Toutes</button>
+        <button class="pill" data-filter="En attente" onclick="setFilter('En attente',this)">⏳ En attente</button>
+        <button class="pill" data-filter="Positive" onclick="setFilter('Positive',this)">✅ Positives</button>
+        <button class="pill" data-filter="Négative" onclick="setFilter('Negative',this)">❌ Négatives</button>
+      </div>
+      <div id="liste-container"></div>
+    </div>
+  </div>
+
+  <!-- ==================== AJOUT ==================== -->
+  <div id="tab-ajout" class="section">
+    <form id="fiche-form" onsubmit="saveFiche(event)">
+      <div class="card">
+        <div class="card-title"><span class="icon">🏢</span> Entreprise</div>
+        <div class="field">
+          <label>Rechercher une entreprise</label>
+          <input type="text" id="search-entreprise" placeholder="Tapez le nom de l'entreprise..."
+            oninput="searchEntreprise()">
+          <div class="search-results" id="search-results"></div>
+        </div>
+        <div class="field">
+          <label>Nom de l'entreprise <span class="req">*</span></label>
+          <input type="text" id="f-nom" placeholder="Ex: Boulangerie Martin" required>
+        </div>
+        <div class="field">
+          <label>Adresse</label>
+          <input type="text" id="f-adresse" placeholder="Rue, ville, code postal">
+        </div>
+        <div class="field">
+          <label>Latitude</label>
+          <input type="text" id="f-lat" readonly>
+        </div>
+        <div class="field">
+          <label>Longitude</label>
+          <input type="text" id="f-lon" readonly>
+        </div>
+        <div id="map"></div>
+        <div class="field">
+          <label>Téléphone</label>
+          <input type="tel" id="f-tel" placeholder="06 00 00 00 00">
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="f-email" placeholder="contact@entreprise.fr">
+        </div>
+        <div class="field">
+          <label>Secteur d'activité</label>
+          <input type="text" id="f-secteur" placeholder="Ex: Restauration, BTP, Commerce...">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">📞</span> Contact</div>
+        <div class="field">
+          <label>Date de contact <span class="req">*</span></label>
+          <input type="date" id="f-date" required>
+        </div>
+        <div class="field">
+          <label>Moyen de contact <span class="req">*</span></label>
+          <div class="moyen-group">
+            <div class="moyen-chip" data-val="Mail" onclick="selectMoyen(this)">📧 Mail</div>
+            <div class="moyen-chip" data-val="Téléphone" onclick="selectMoyen(this)">📞 Téléphone</div>
+            <div class="moyen-chip" data-val="Visite" onclick="selectMoyen(this)">🚶 Visite</div>
+            <div class="moyen-chip" data-val="Courrier" onclick="selectMoyen(this)">✉️ Courrier</div>
+          </div>
+          <input type="hidden" id="f-moyen" required>
+        </div>
+        <div class="field">
+          <label>Nom du contact (si connu)</label>
+          <input type="text" id="f-contact-nom" placeholder="M. / Mme ...">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">📷</span> Photo / Capture</div>
+        <div class="photo-zone" id="photo-zone">
+          <div style="font-size:32px">📸</div>
+          <p>Appuyez pour ajouter une photo ou capture d'écran</p>
+          <input type="file" id="f-photo" accept="image/*" onchange="handlePhoto(event)">
+        </div>
+        <img class="photo-preview" id="photo-preview" alt="Aperçu">
+        <div style="margin-top:8px; text-align:right; display:none" id="photo-del">
+          <button type="button" class="btn btn-sm"
+            style="background:var(--danger-light);color:var(--danger);border:none" onclick="clearPhoto()">🗑 Supprimer
+            la photo</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">💬</span> Réponse de l'entreprise</div>
+        <div class="field">
+          <label>Statut</label>
+          <div class="statut-group">
+            <div class="statut-chip" data-val="En attente" onclick="selectStatut(this,'sel-attente')">⏳ En attente</div>
+            <div class="statut-chip" data-val="Positive" onclick="selectStatut(this,'sel-positive')">✅ Positive</div>
+            <div class="statut-chip" data-val="Négative" onclick="selectStatut(this,'sel-negative')">❌ Négative</div>
+          </div>
+          <input type="hidden" id="f-statut" value="En attente">
+        </div>
+        <div class="field">
+          <label>Commentaire / Notes</label>
+          <textarea id="f-notes" placeholder="Réponse reçue, rendez-vous prévu, rappeler le..."></textarea>
+        </div>
+      </div>
+
+      <input type="hidden" id="f-id">
+      <button type="submit" class="btn btn-primary" style="margin-bottom:12px" id="btn-save">💾 Enregistrer la
+        fiche</button>
+      <button type="button" class="btn btn-outline" onclick="resetForm()">🔄 Vider le formulaire</button>
+      <div style="height:20px"></div>
+    </form>
+  </div>
+
+  <!-- ==================== EXPORT ==================== -->
+  <div id="tab-export" class="section">
+    <div class="eleve-input-zone">
+      <div class="card-title" style="margin-bottom:12px"><span class="icon">👤</span> Mon identité</div>
+      <div class="field">
+        <label>Prénom et Nom</label>
+        <input type="text" id="eleve-nom" placeholder="Ex: Marie Dupont" oninput="saveEleveInfo()">
+      </div>
+      <div class="field">
+        <label>Classe</label>
+        <input type="text" id="eleve-classe" placeholder="Ex: Terminale BAC Pro MELEC" oninput="saveEleveInfo()">
+      </div>
+    </div>
+
+    <div class="export-stats" id="export-stats"></div>
+
+    <div class="info-banner">
+      📁 L'export génère un fichier <strong>.json</strong> contenant toutes vos fiches. Vous pouvez l'envoyer par mail à
+      votre professeur ou le sauvegarder dans votre cloud.
+    </div>
+
+    <button class="btn btn-success" onclick="exportJSON()" style="margin-bottom:12px">
+      📤 Exporter mes fiches (.json)
+    </button>
+    <button class="btn btn-outline" onclick="exportTXT()" style="margin-bottom:12px">
+      📄 Exporter en texte (.txt)
+    </button>
+
+    <div class="card" style="margin-top:8px">
+      <div class="card-title" style="font-size:14px; margin-bottom:10px">📥 Importer des fiches</div>
+      <p style="font-size:13px;color:var(--gray-600);margin-bottom:10px">Pour restaurer un export ou fusionner plusieurs
+        fichiers.</p>
+      <div class="photo-zone" style="position:relative">
+        <div style="font-size:28px">📂</div>
+        <p>Sélectionner un fichier .json exporté</p>
+        <input type="file" accept=".json" onchange="importJSON(event)"
+          style="position:absolute;inset:0;opacity:0;cursor:pointer">
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <button class="btn btn-danger" onclick="confirmClear()">🗑 Effacer toutes les fiches</button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL DETAIL ==================== -->
+  <div class="modal-overlay" id="modal-detail">
+    <div class="modal">
+      <div class="modal-header">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div>
+          <div style="font-weight:700;font-size:16px" id="modal-nom">—</div>
+          <div style="font-size:12px;opacity:0.8" id="modal-date">—</div>
+        </div>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // ===== DATA =====
+    let fiches = JSON.parse(localStorage.getItem('fiches_bac') || '[]');
+    let currentFilter = 'tous';
+    let map;
+    let marker;
+
+    function save() { localStorage.setItem('fiches_bac', JSON.stringify(fiches)); }
+    function saveEleveInfo() {
+      localStorage.setItem('eleve_nom', document.getElementById('eleve-nom').value);
+      localStorage.setItem('eleve_classe', document.getElementById('eleve-classe').value);
+      updateHeaderEleve();
+    }
+    function updateHeaderEleve() {
+      const n = localStorage.getItem('eleve_nom') || '';
+      const c = localStorage.getItem('eleve_classe') || '';
+      document.getElementById('header-eleve').textContent = n ? n + (c ? ' – ' + c : '') : 'BAC Pro – Recherche de stage/emploi';
+    }
+
+    // ===== SEARCH ENTREPRISE =====
+    async function searchEntreprise() {
+      const query = document.getElementById('search-entreprise').value.trim();
+      const resultsDiv = document.getElementById('search-results');
+      if (query.length < 3) {
+        resultsDiv.style.display = 'none';
+        return;
+      }
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&countrycodes=fr`);
+        const results = await response.json();
+        resultsDiv.innerHTML = '';
+        if (results.length > 0) {
+          results.forEach(result => {
+            const div = document.createElement('div');
+            div.className = 'search-result';
+            div.textContent = result.display_name;
+            div.onclick = () => selectEntreprise(result);
+            resultsDiv.appendChild(div);
+          });
+          resultsDiv.style.display = 'block';
+        } else {
+          resultsDiv.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Erreur lors de la recherche:', error);
+        resultsDiv.style.display = 'none';
+      }
+    }
+
+    function selectEntreprise(result) {
+      document.getElementById('f-nom').value = result.display_name.split(',')[0] || result.display_name;
+      document.getElementById('f-adresse').value = result.display_name;
+      document.getElementById('f-lat').value = result.lat;
+      document.getElementById('f-lon').value = result.lon;
+      document.getElementById('search-entreprise').value = '';
+      document.getElementById('search-results').style.display = 'none';
+      showMap(result.lat, result.lon);
+    }
+
+    function showMap(lat, lon) {
+      const mapDiv = document.getElementById('map');
+      if (!map) {
+        map = L.map('map').setView([lat, lon], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+      } else {
+        map.setView([lat, lon], 15);
+      }
+      if (marker) {
+        map.removeLayer(marker);
+      }
+      marker = L.marker([lat, lon]).addTo(map);
+      mapDiv.style.display = 'block';
+    }
+
+    // ===== TABS =====
+    function switchTab(tab) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+      event.currentTarget.classList.add('active');
+      if (tab === 'liste') renderListe();
+      if (tab === 'export') renderExportStats();
+    }
+
+    // ===== MOYEN / STATUT CHIPS =====
+    function selectMoyen(el) {
+      document.querySelectorAll('.moyen-chip').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      document.getElementById('f-moyen').value = el.dataset.val;
+    }
+    function selectStatut(el, cls) {
+      document.querySelectorAll('.statut-chip').forEach(c => c.classList.remove('sel-attente', 'sel-positive', 'sel-negative'));
+      el.classList.add(cls);
+      document.getElementById('f-statut').value = el.dataset.val;
+    }
+
+    // ===== PHOTO =====
+    function handlePhoto(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const prev = document.getElementById('photo-preview');
+        prev.src = ev.target.result;
+        prev.style.display = 'block';
+        document.getElementById('photo-del').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+    function clearPhoto() {
+      document.getElementById('f-photo').value = '';
+      document.getElementById('photo-preview').style.display = 'none';
+      document.getElementById('photo-preview').src = '';
+      document.getElementById('photo-del').style.display = 'none';
+    }
+
+    // ===== FORM =====
+    function resetForm() {
+      document.getElementById('f-id').value = '';
+      document.getElementById('search-entreprise').value = '';
+      document.getElementById('f-nom').value = '';
+      document.getElementById('f-adresse').value = '';
+      document.getElementById('f-lat').value = '';
+      document.getElementById('f-lon').value = '';
+      document.getElementById('map').style.display = 'none';
+      document.getElementById('f-tel').value = '';
+      document.getElementById('f-email').value = '';
+      document.getElementById('f-secteur').value = '';
+      document.getElementById('f-date').value = '';
+      document.getElementById('f-moyen').value = '';
+      document.getElementById('f-contact-nom').value = '';
+      document.getElementById('f-notes').value = '';
+      document.getElementById('f-statut').value = 'En attente';
+      document.querySelectorAll('.moyen-chip').forEach(c => c.classList.remove('selected'));
+      document.querySelectorAll('.statut-chip').forEach(c => c.classList.remove('sel-attente', 'sel-positive', 'sel-negative'));
+      clearPhoto();
+      document.getElementById('btn-save').textContent = '💾 Enregistrer la fiche';
+    }
+
+    function saveFiche(e) {
+      e.preventDefault();
+      const moyen = document.getElementById('f-moyen').value;
+      if (!moyen) { showToast('⚠️ Choisissez un moyen de contact'); return; }
+      const id = document.getElementById('f-id').value || Date.now().toString();
+      const photo = document.getElementById('photo-preview').src || '';
+      const fiche = {
+        id, nom: document.getElementById('f-nom').value.trim(),
+        adresse: document.getElementById('f-adresse').value.trim(),
+        lat: document.getElementById('f-lat').value.trim(),
+        lon: document.getElementById('f-lon').value.trim(),
+        tel: document.getElementById('f-tel').value.trim(),
+        email: document.getElementById('f-email').value.trim(),
+        secteur: document.getElementById('f-secteur').value.trim(),
+        date: document.getElementById('f-date').value,
+        moyen, contactNom: document.getElementById('f-contact-nom').value.trim(),
+        statut: document.getElementById('f-statut').value || 'En attente',
+        notes: document.getElementById('f-notes').value.trim(),
+        photo: photo.startsWith('data:') ? photo : '',
+        createdAt: new Date().toISOString()
+      };
+      const idx = fiches.findIndex(f => f.id === id);
+      if (idx >= 0) { fiches[idx] = fiche; showToast('✏️ Fiche modifiée !'); }
+      else { fiches.unshift(fiche); showToast('✅ Fiche enregistrée !'); }
+      save(); resetForm();
+      // Go to liste
+      document.querySelectorAll('.tab-btn')[0].click();
+    }
+
+    // ===== LISTE =====
+    function setFilter(f, el) {
+      currentFilter = f;
+      document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      renderListe();
+    }
+
+    function renderListe() {
+      const search = (document.querySelector('.search-bar')?.value || '').toLowerCase();
+      let items = fiches.filter(f => {
+        if (currentFilter !== 'tous' && f.statut !== currentFilter) return false;
+        if (search && !f.nom.toLowerCase().includes(search) && !f.secteur.toLowerCase().includes(search) && !f.adresse.toLowerCase().includes(search)) return false;
+        return true;
+      });
+      const c = document.getElementById('liste-container');
+      if (!items.length) {
+        c.innerHTML = `<div class="empty-state"><div class="big">🏢</div><p>Aucune fiche trouvée.<br>Appuyez sur <strong>Ajouter</strong> pour commencer !</p></div>`;
+        return;
+      }
+      c.innerHTML = items.map(f => {
+        const statClass = 'statut-' + f.statut.replace(' ', '_');
+        const badgeCls = f.statut === 'Positive' ? 'badge-positive' : f.statut === 'Négative' ? 'badge-negative' : 'badge-attente';
+        const statEmoji = f.statut === 'Positive' ? '✅' : f.statut === 'Négative' ? '❌' : '⏳';
+        const dateStr = f.date ? new Date(f.date).toLocaleDateString('fr-FR') : '—';
+        return `<div class="fiche-item ${statClass}" onclick="openDetail('${f.id}')">
+      <div class="fiche-nom">${f.nom}</div>
+      <div class="fiche-meta">
+        <span>📅 ${dateStr}</span>
+        ${f.adresse ? '<span>📍 ' + f.adresse.split(',')[0] + '</span>' : ''}
+        ${f.secteur ? '<span>🔧 ' + f.secteur + '</span>' : ''}
+      </div>
+      <div style="margin-top:6px">
+        <span class="fiche-badge badge-moyen">${f.moyen || '—'}</span>
+        <span class="fiche-badge ${badgeCls}">${statEmoji} ${f.statut}</span>
+      </div>
+    </div>`;
+      }).join('');
+    }
+
+    // ===== DETAIL MODAL =====
+    function openDetail(id) {
+      const f = fiches.find(x => x.id === id);
+      if (!f) return;
+      document.getElementById('modal-nom').textContent = f.nom;
+      document.getElementById('modal-date').textContent = f.date ? '📅 ' + new Date(f.date).toLocaleDateString('fr-FR') : '';
+      const badgeCls = f.statut === 'Positive' ? 'badge-positive' : f.statut === 'Négative' ? 'badge-negative' : 'badge-attente';
+      const statEmoji = f.statut === 'Positive' ? '✅' : f.statut === 'Négative' ? '❌' : '⏳';
+      document.getElementById('modal-body').innerHTML = `
+    <div class="detail-row"><div class="detail-label">Statut</div><span class="fiche-badge ${badgeCls}" style="font-size:14px;padding:4px 12px">${statEmoji} ${f.statut}</span></div>
+    <div class="detail-sep"></div>
+    ${f.adresse ? `<div class="detail-row"><div class="detail-label">Adresse</div><div class="detail-val">📍 ${f.adresse}</div></div>` : ''}
+    ${f.lat && f.lon ? `<div class="detail-row"><div class="detail-label">Coordonnées</div><div class="detail-val">Lat: ${f.lat}, Lon: ${f.lon}</div></div>` : ''}
+    ${f.tel ? `<div class="detail-row"><div class="detail-label">Téléphone</div><div class="detail-val"><a href="tel:${f.tel}" style="color:var(--primary)">📞 ${f.tel}</a></div></div>` : ''}
+    ${f.email ? `<div class="detail-row"><div class="detail-label">Email</div><div class="detail-val"><a href="mailto:${f.email}" style="color:var(--primary)">📧 ${f.email}</a></div></div>` : ''}
+    ${f.secteur ? `<div class="detail-row"><div class="detail-label">Secteur</div><div class="detail-val">${f.secteur}</div></div>` : ''}
+    ${f.contactNom ? `<div class="detail-row"><div class="detail-label">Contact</div><div class="detail-val">👤 ${f.contactNom}</div></div>` : ''}
+    <div class="detail-sep"></div>
+    <div class="detail-row"><div class="detail-label">Moyen de contact</div><div class="detail-val"><span class="fiche-badge badge-moyen" style="font-size:13px">${f.moyen || '—'}</span></div></div>
+    ${f.notes ? `<div class="detail-row" style="margin-top:8px"><div class="detail-label">Notes / Réponse</div><div class="detail-val" style="white-space:pre-wrap;background:var(--surface-2);padding:10px;border-radius:8px;margin-top:4px">${f.notes}</div></div>` : ''}
+    ${f.photo ? `<div class="detail-sep"></div><div class="detail-label">Photo</div><img src="${f.photo}" style="width:100%;border-radius:8px;margin-top:8px" alt="capture">` : ''}
+    <div class="detail-sep"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-outline btn-sm" style="flex:1" onclick="editFiche('${f.id}')">✏️ Modifier</button>
+      <button class="btn btn-sm" style="flex:1;background:var(--danger-light);color:var(--danger);border:none" onclick="deleteFiche('${f.id}')">🗑 Supprimer</button>
+    </div>
+  `;
+      document.getElementById('modal-detail').classList.add('open');
+    }
+    function closeModal() { document.getElementById('modal-detail').classList.remove('open'); }
+
+    function editFiche(id) {
+      const f = fiches.find(x => x.id === id);
+      if (!f) return;
+      closeModal();
+      resetForm();
+      document.getElementById('f-id').value = f.id;
+      document.getElementById('f-nom').value = f.nom;
+      document.getElementById('f-adresse').value = f.adresse;
+      document.getElementById('f-lat').value = f.lat || '';
+      document.getElementById('f-lon').value = f.lon || '';
+      if (f.lat && f.lon) showMap(f.lat, f.lon);
+      document.getElementById('f-tel').value = f.tel;
+      document.getElementById('f-email').value = f.email;
+      document.getElementById('f-secteur').value = f.secteur;
+      document.getElementById('f-date').value = f.date;
+      document.getElementById('f-contact-nom').value = f.contactNom || '';
+      document.getElementById('f-notes').value = f.notes;
+      document.getElementById('f-statut').value = f.statut;
+      document.getElementById('f-moyen').value = f.moyen;
+      document.querySelectorAll('.moyen-chip').forEach(c => { if (c.dataset.val === f.moyen) c.classList.add('selected'); });
+      const statCls = f.statut === 'Positive' ? 'sel-positive' : f.statut === 'Négative' ? 'sel-negative' : 'sel-attente';
+      document.querySelectorAll('.statut-chip').forEach(c => { if (c.dataset.val === f.statut) c.classList.add(statCls); });
+      if (f.photo) {
+        document.getElementById('photo-preview').src = f.photo;
+        document.getElementById('photo-preview').style.display = 'block';
+        document.getElementById('photo-del').style.display = 'block';
+      }
+      document.getElementById('btn-save').textContent = '💾 Modifier la fiche';
+      document.querySelectorAll('.tab-btn')[1].click();
+      window.scrollTo(0, 0);
+    }
+
+    function deleteFiche(id) {
+      if (!confirm('Supprimer cette fiche ?')) return;
+      fiches = fiches.filter(f => f.id !== id);
+      save(); closeModal(); renderListe(); showToast('🗑 Fiche supprimée');
+    }
+
+    // ===== EXPORT =====
+    function renderExportStats() {
+      const total = fiches.length;
+      const positives = fiches.filter(f => f.statut === 'Positive').length;
+      const negatives = fiches.filter(f => f.statut === 'Négative').length;
+      const attente = fiches.filter(f => f.statut === 'En attente').length;
+      document.getElementById('export-stats').innerHTML = `
+    <div class="stat-box"><div class="num">${total}</div><div class="lbl">Fiches totales</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--success)">${positives}</div><div class="lbl">Réponses positives</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--warning)">${attente}</div><div class="lbl">En attente</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--danger)">${negatives}</div><div class="lbl">Réponses négatives</div></div>
+  `;
+      document.getElementById('eleve-nom').value = localStorage.getItem('eleve_nom') || '';
+      document.getElementById('eleve-classe').value = localStorage.getItem('eleve_classe') || '';
+    }
+
+    function exportJSON() {
+      // Créer une copie des fiches sans les photos pour réduire la taille du fichier
+      const fichesSansPhotos = fiches.map(fiche => {
+        const { photo, ...ficheSansPhoto } = fiche;
+        return ficheSansPhoto;
+      });
+
+      const data = {
+        eleve: { nom: localStorage.getItem('eleve_nom') || '', classe: localStorage.getItem('eleve_classe') || '' },
+        exportDate: new Date().toISOString(),
+        fiches: fichesSansPhotos
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const nom = (localStorage.getItem('eleve_nom') || 'fiches').replace(/\s+/g, '_');
+      a.href = url; a.download = `suivi_entreprises_${nom}.json`; a.click();
+      URL.revokeObjectURL(url);
+      showToast('📤 Export réussi !');
+    }
+
+    function exportTXT() {
+      const nom = localStorage.getItem('eleve_nom') || '';
+      const classe = localStorage.getItem('eleve_classe') || '';
+      let txt = `SUIVI DES RECHERCHES D'ENTREPRISE\n`;
+      txt += nom ? `Élève : ${nom}\n` : '';
+      txt += classe ? `Classe : ${classe}\n` : '';
+      txt += `Exporté le : ${new Date().toLocaleDateString('fr-FR')}\n`;
+      txt += `Nombre de fiches : ${fiches.length}\n`;
+      txt += `${'='.repeat(50)}\n\n`;
+      fiches.forEach((f, i) => {
+        txt += `FICHE ${i + 1} – ${f.nom}\n`;
+        txt += `${'–'.repeat(40)}\n`;
+        if (f.adresse) txt += `Adresse : ${f.adresse}\n`;
+        if (f.lat && f.lon) txt += `Coordonnées : Lat ${f.lat}, Lon ${f.lon}\n`;
+        if (f.tel) txt += `Tél : ${f.tel}\n`;
+        if (f.email) txt += `Email : ${f.email}\n`;
+        if (f.secteur) txt += `Secteur : ${f.secteur}\n`;
+        txt += `Date de contact : ${f.date ? new Date(f.date).toLocaleDateString('fr-FR') : '—'}\n`;
+        txt += `Moyen : ${f.moyen || '—'}\n`;
+        if (f.contactNom) txt += `Contact : ${f.contactNom}\n`;
+        txt += `Statut : ${f.statut}\n`;
+        if (f.notes) txt += `Notes : ${f.notes}\n`;
+        txt += `\n`;
+      });
+      const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.download = `suivi_entreprises.txt`; a.click();
+      URL.revokeObjectURL(url);
+      showToast('📄 Export texte réussi !');
+    }
+
+    function importJSON(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          const imported = data.fiches || data;
+          if (!Array.isArray(imported)) throw new Error();
+          let added = 0;
+          imported.forEach(f => {
+            if (!fiches.find(x => x.id === f.id)) { fiches.unshift(f); added++; }
+          });
+          if (data.eleve) {
+            if (data.eleve.nom && !localStorage.getItem('eleve_nom')) { document.getElementById('eleve-nom').value = data.eleve.nom; localStorage.setItem('eleve_nom', data.eleve.nom); }
+            if (data.eleve.classe && !localStorage.getItem('eleve_classe')) { document.getElementById('eleve-classe').value = data.eleve.classe; localStorage.setItem('eleve_classe', data.eleve.classe); }
+          }
+          save(); renderExportStats(); showToast(`✅ ${added} fiche(s) importée(s) !`);
+        } catch { showToast('❌ Fichier invalide'); }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    }
+
+    function confirmClear() {
+      if (confirm('⚠️ Effacer TOUTES les fiches ? Cette action est irréversible.')) {
+        fiches = []; save(); renderExportStats(); showToast('🗑 Toutes les fiches supprimées');
+      }
+    }
+
+    // ===== TOAST =====
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    // ===== INIT =====
+    document.getElementById('f-date').valueAsDate = new Date();
+    selectStatut(document.querySelector('.statut-chip'), 'sel-attente');
+    updateHeaderEleve();
+    renderListe();
+  </script>
+</body>
+
+</html>
