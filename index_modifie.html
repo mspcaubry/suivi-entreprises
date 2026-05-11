@@ -1,0 +1,1844 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Suivi Entreprises – 2PMIA</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Suivi Entreprises">
+  <meta name="theme-color" content="#111827">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+  <style>
+    :root {
+      --bg: #0b1120;
+      --surface: #111827;
+      --surface-2: #1f2937;
+      --surface-3: #111827;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --primary: #60a5fa;
+      --primary-light: #3b82f6;
+      --success: #22c55e;
+      --success-light: #166534;
+      --danger: #ef4444;
+      --danger-light: #991b1b;
+      --warning: #f59e0b;
+      --warning-light: #b45309;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --font: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      background: #111827;
+      color: var(--text);
+      padding: 16px 16px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    header p {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-top: 2px;
+      color: var(--text-muted);
+    }
+
+    .header-row {
+      display: -webkit-flex;
+      display: flex;
+      -webkit-align-items: center;
+      align-items: center;
+      -webkit-justify-content: space-between;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    /* NAV TABS */
+    .tabs {
+      display: -webkit-flex;
+      display: flex;
+      background: #111827;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      position: sticky;
+      top: 68px;
+      z-index: 99;
+    }
+
+    .tab-btn {
+      -webkit-flex: 1;
+      flex: 1;
+      padding: 12px 4px;
+      background: none;
+      border: none;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    /* SECTIONS */
+    .section {
+      display: none;
+      padding: 16px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    /* CARDS */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-align-items: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title .icon {
+      font-size: 18px;
+    }
+
+    /* FORM */
+    .field {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+
+    label span.req {
+      color: var(--danger);
+    }
+
+    input[type="text"],
+    input[type="tel"],
+    input[type="email"],
+    input[type="date"],
+    input[type="search"],
+    select,
+    textarea {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 15px;
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--surface-2);
+      outline: none;
+      transition: border 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+      -webkit-border-radius: var(--radius-sm);
+    }
+
+    /* Safari search input reset */
+    input[type="search"]::-webkit-search-decoration,
+    input[type="search"]::-webkit-search-cancel-button,
+    input[type="search"]::-webkit-search-results-button,
+    input[type="search"]::-webkit-search-results-decoration {
+      -webkit-appearance: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--primary);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+    }
+
+    /* SEARCH RESULTS */
+    .search-results {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+      display: none;
+    }
+
+    .search-result {
+      padding: 10px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: background 0.2s;
+      color: var(--text);
+    }
+
+    .search-result:hover {
+      background: var(--primary-light);
+    }
+
+    .search-result:last-child {
+      border-bottom: none;
+    }
+
+    /* MAP */
+    #map {
+      height: 200px;
+      border-radius: var(--radius-sm);
+      margin-top: 10px;
+      display: none;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* CONTACT MOYEN CHIPS */
+    .moyen-group {
+      display: -webkit-flex;
+      display: flex;
+      gap: 8px;
+      -webkit-flex-wrap: wrap;
+      flex-wrap: wrap;
+    }
+
+    .moyen-chip {
+      display: -webkit-flex;
+      display: flex;
+      -webkit-align-items: center;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 14px;
+      border-radius: 20px;
+      border: 1.5px solid rgba(148, 163, 184, 0.25);
+      background: var(--surface-2);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+      color: var(--text);
+    }
+
+    .moyen-chip.selected {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* STATUT REPONSE */
+    .statut-group {
+      display: -webkit-flex;
+      display: flex;
+      gap: 8px;
+      -webkit-flex-wrap: wrap;
+      flex-wrap: wrap;
+    }
+
+    .statut-chip {
+      -webkit-flex: 1;
+      flex: 1;
+      min-width: 80px;
+      text-align: center;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid rgba(148, 163, 184, 0.25);
+      background: var(--surface-2);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+      color: var(--text);
+    }
+
+    .statut-chip.sel-attente {
+      border-color: var(--warning);
+      background: var(--warning-light);
+      color: var(--warning);
+      font-weight: 600;
+    }
+
+    .statut-chip.sel-positive {
+      border-color: var(--success);
+      background: var(--success-light);
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .statut-chip.sel-negative {
+      border-color: var(--danger);
+      background: var(--danger-light);
+      color: var(--danger);
+      font-weight: 600;
+    }
+
+    /* PHOTO */
+    .photo-zone {
+      border: 2px dashed rgba(148, 163, 184, 0.4);
+      border-radius: var(--radius-sm);
+      padding: 18px;
+      text-align: center;
+      cursor: pointer;
+      background: var(--surface-2);
+      transition: border 0.2s;
+      position: relative;
+      color: var(--text-muted);
+    }
+
+    .photo-zone:active {
+      border-color: var(--primary);
+    }
+
+    .photo-zone p {
+      font-size: 13px;
+      color: var(--gray-400);
+      margin-top: 6px;
+    }
+
+    .photo-zone input {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .photo-preview {
+      width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      border-radius: var(--radius-sm);
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* BOUTONS */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+      font-family: var(--font);
+    }
+
+    .btn:active {
+      -webkit-transform: scale(0.98);
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--primary);
+      border: 1.5px solid var(--primary);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-sm {
+      padding: 8px 14px;
+      font-size: 13px;
+      width: auto;
+      display: inline-block;
+      border-radius: var(--radius-sm);
+    }
+
+    /* LISTE FICHES */
+    .fiche-item {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.30);
+      cursor: pointer;
+      transition: box-shadow 0.2s;
+      border-left: 4px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .fiche-item:active {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.13);
+    }
+
+    .fiche-item.statut-En_attente {
+      border-left-color: #f0c000;
+    }
+
+    .fiche-item.statut-Positive {
+      border-left-color: #1a7a4a;
+    }
+
+    .fiche-item.statut-Negative {
+      border-left-color: #c0392b;
+    }
+
+    .fiche-nom {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--gray-800);
+    }
+
+    .fiche-meta {
+      font-size: 12px;
+      color: var(--gray-400);
+      margin-top: 3px;
+      display: -webkit-flex;
+      display: flex;
+      gap: 10px;
+      -webkit-flex-wrap: wrap;
+      flex-wrap: wrap;
+    }
+
+    .fiche-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    .badge-attente {
+      background: var(--warning-light);
+      color: var(--warning);
+    }
+
+    .badge-positive {
+      background: var(--success-light);
+      color: var(--success);
+    }
+
+    .badge-negative {
+      background: var(--danger-light);
+      color: var(--danger);
+    }
+
+    .badge-moyen {
+      background: var(--primary-light);
+      color: var(--primary);
+      margin-left: 4px;
+    }
+
+    /* VIDE */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .big {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .empty-state p {
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    /* EXPORT */
+    .export-stats {
+      display: -webkit-flex;
+      display: grid;
+      -webkit-flex-wrap: wrap;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stat-box {
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      text-align: center;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.20);
+    }
+
+    .stat-box .num {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .stat-box .lbl {
+      font-size: 12px;
+      color: var(--gray-400);
+      margin-top: 2px;
+    }
+
+    /* MODAL DETAIL */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 200;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .modal-overlay.open {
+      display: -webkit-flex;
+      display: flex;
+      -webkit-align-items: flex-start;
+      align-items: flex-start;
+    }
+
+    .modal {
+      background: var(--bg);
+      width: 100%;
+      min-height: 100vh;
+      padding: 0 0 40px;
+    }
+
+    .modal-header {
+      background: #0f172a;
+      color: var(--text);
+      padding: 16px;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-align-items: center;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+    }
+
+    .modal-close {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-align-items: center;
+      align-items: center;
+      -webkit-justify-content: center;
+      justify-content: center;
+    }
+
+    .modal-body {
+      padding: 16px;
+    }
+
+    .detail-row {
+      margin-bottom: 14px;
+    }
+
+    .detail-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+    }
+
+    .detail-val {
+      font-size: 15px;
+      color: var(--gray-800);
+    }
+
+    .detail-sep {
+      height: 1px;
+      background: var(--gray-200);
+      margin: 16px 0;
+    }
+
+    /* ELEVE INFO */
+    .eleve-input-zone {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.20);
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      -webkit-transform: translateX(-50%) translateY(80px);
+      transform: translateX(-50%) translateY(80px);
+      background: #111827;
+      color: var(--text);
+      padding: 11px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      z-index: 999;
+      -webkit-transition: -webkit-transform 0.3s;
+      transition: transform 0.3s;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    }
+
+    .toast.show {
+      -webkit-transform: translateX(-50%) translateY(0);
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* SEARCH */
+    .search-bar {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 9px 16px;
+      font-size: 14px;
+      font-family: var(--font);
+      background: var(--surface-2);
+      color: var(--text);
+      outline: none;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .search-bar:focus {
+      border-color: var(--primary-mid);
+    }
+
+    /* FILTER PILLS */
+    .filter-pills {
+      display: -webkit-flex;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px;
+      margin-bottom: 14px;
+    }
+
+    .filter-pills::-webkit-scrollbar {
+      display: none;
+    }
+
+    .pill {
+      white-space: nowrap;
+      padding: 6px 14px;
+      border-radius: 14px;
+      border: 1.5px solid rgba(148, 163, 184, 0.24);
+      font-size: 13px;
+      background: var(--surface-2);
+      cursor: pointer;
+      font-family: var(--font);
+      color: var(--text);
+    }
+
+    .pill.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+      font-weight: 600;
+    }
+
+    .info-banner {
+      background: rgba(59, 130, 246, 0.12);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--primary);
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    /* MAP VIEW */
+    #map-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 0;
+    }
+
+    #main-map {
+      flex: 1;
+      border-radius: 0;
+      border: none;
+      height: 100%;
+      min-height: 400px;
+    }
+
+    .map-controls {
+      background: var(--surface);
+      padding: 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .map-search-box {
+      flex: 1;
+      min-width: 200px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .map-search-box input {
+      flex: 1;
+      margin-bottom: 0;
+      padding: 8px 12px;
+      font-size: 13px;
+      height: 36px;
+    }
+
+    .map-filters {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .map-filter-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .map-filter-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    .map-stats {
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .search-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+      max-height: 250px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+
+    .search-dropdown.show {
+      display: block;
+    }
+
+    .search-dropdown-item {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      transition: background 0.2s;
+      font-size: 13px;
+    }
+
+    .search-dropdown-item:hover {
+      background: rgba(96, 165, 250, 0.1);
+    }
+
+    .search-dropdown-item:last-child {
+      border-bottom: none;
+    }
+
+    .search-dropdown-item .item-title {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .search-dropdown-item .item-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .map-legend {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      font-size: 12px;
+      z-index: 500;
+      max-width: 200px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+
+    .legend-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .legend-attente .legend-color { background: var(--warning-light); }
+    .legend-positive .legend-color { background: var(--success-light); }
+    .legend-negative .legend-color { background: var(--danger-light); }
+
+    .map-popup-content {
+      font-size: 13px;
+      min-width: 200px;
+    }
+
+    .map-popup-title {
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .map-popup-item {
+      margin: 4px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .map-popup-item-label {
+      color: var(--text-muted);
+      font-weight: 600;
+      min-width: 50px;
+    }
+
+    .map-popup-item-value {
+      color: var(--text);
+    }
+
+    .map-popup-actions {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      gap: 6px;
+    }
+
+    .map-popup-actions button {
+      flex: 1;
+      padding: 4px 8px;
+      font-size: 11px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .map-popup-actions .btn-view {
+      background: var(--primary);
+      color: white;
+    }
+
+    .map-popup-actions .btn-edit {
+      background: rgba(96, 165, 250, 0.2);
+      color: var(--primary);
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="header-row">
+      <div>
+        <h1>📋 Suivi Entreprises</h1>
+        <p id="header-eleve">2PMIA – Recherche de stage/emploi</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('liste', this)">🏢 Mes fiches</button>
+    <button class="tab-btn" onclick="switchTab('carte', this)">🗺️ Vue Carte</button>
+    <button class="tab-btn" onclick="switchTab('ajout', this)">➕ Ajouter</button>
+    <button class="tab-btn" onclick="switchTab('export', this)">📤 Exporter-Importer</button>
+  </div>
+
+  <!-- ==================== LISTE ==================== -->
+  <div id="tab-liste" class="section active">
+    <div style="padding-top:4px">
+      <input class="search-bar" type="search" placeholder="🔍 Rechercher une entreprise..." oninput="renderListe()">
+      <div class="filter-pills">
+        <button class="pill active" data-filter="tous" onclick="setFilter('tous',this)">Toutes</button>
+        <button class="pill" data-filter="En attente" onclick="setFilter('En attente',this)">⏳ En attente</button>
+        <button class="pill" data-filter="Positive" onclick="setFilter('Positive',this)">✅ Positives</button>
+        <button class="pill" data-filter="Négative" onclick="setFilter('Negative',this)">❌ Négatives</button>
+      </div>
+      <div id="liste-container"></div>
+    </div>
+  </div>
+
+  <!-- ==================== CARTE ==================== -->
+  <div id="tab-carte" class="section" style="padding:0;height:calc(100vh - 140px)">
+    <div id="map-container">
+      <div class="map-controls">
+        <div class="map-search-box" style="position:relative">
+          <input type="text" id="map-search" placeholder="🔍 Rechercher une entreprise ou un lieu..." oninput="handleMapSearch()">
+          <div class="search-dropdown" id="map-search-dropdown"></div>
+        </div>
+        <div class="map-filters">
+          <button class="map-filter-btn active" data-filter="tous" onclick="setMapFilter('tous', this)">Toutes</button>
+          <button class="map-filter-btn" data-filter="En attente" onclick="setMapFilter('En attente', this)">⏳</button>
+          <button class="map-filter-btn" data-filter="Positive" onclick="setMapFilter('Positive', this)">✅</button>
+          <button class="map-filter-btn" data-filter="Négative" onclick="setMapFilter('Negative', this)">❌</button>
+        </div>
+        <div class="map-stats"><span id="map-stats-count">0</span> entreprises visibles</div>
+      </div>
+      <div id="main-map"></div>
+      <div class="map-legend" id="map-legend">
+        <div style="font-weight:700;margin-bottom:8px;color:var(--text)">Légende</div>
+        <div class="legend-item legend-attente">
+          <div class="legend-color"></div>
+          <span>En attente</span>
+        </div>
+        <div class="legend-item legend-positive">
+          <div class="legend-color"></div>
+          <span>Positive</span>
+        </div>
+        <div class="legend-item legend-negative">
+          <div class="legend-color"></div>
+          <span>Négative</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== AJOUT ==================== -->
+  <div id="tab-ajout" class="section">
+    <form id="fiche-form" onsubmit="saveFiche(event)">
+      <div class="card">
+        <div class="card-title"><span class="icon">🏢</span> Entreprise</div>
+        <div class="field">
+          <label>Rechercher une entreprise</label>
+          <input type="text" id="search-entreprise" placeholder="Tapez le nom de l'entreprise..."
+            oninput="searchEntreprise()">
+          <div class="search-results" id="search-results"></div>
+        </div>
+        <div class="field">
+          <label>Nom de l'entreprise <span class="req">*</span></label>
+          <input type="text" id="f-nom" placeholder="Ex: Boulangerie Martin" required>
+        </div>
+        <div class="field">
+          <label>Adresse</label>
+          <input type="text" id="f-adresse" placeholder="Rue, ville, code postal">
+        </div>
+        <div class="field">
+          <label>Latitude</label>
+          <input type="text" id="f-lat" readonly>
+        </div>
+        <div class="field">
+          <label>Longitude</label>
+          <input type="text" id="f-lon" readonly>
+        </div>
+        <div id="map"></div>
+        <div class="field">
+          <label>Téléphone</label>
+          <input type="tel" id="f-tel" placeholder="06 00 00 00 00">
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="f-email" placeholder="contact@entreprise.fr">
+        </div>
+        <div class="field">
+          <label>Secteur d'activité</label>
+          <input type="text" id="f-secteur" placeholder="Ex: Restauration, BTP, Commerce...">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">📞</span> Contact</div>
+        <div class="field">
+          <label>Date de contact <span class="req">*</span></label>
+          <input type="date" id="f-date" required>
+        </div>
+        <div class="field">
+          <label>Moyen de contact <span class="req">*</span></label>
+          <div class="moyen-group">
+            <div class="moyen-chip" data-val="Mail" onclick="selectMoyen(this)">📧 Mail</div>
+            <div class="moyen-chip" data-val="Téléphone" onclick="selectMoyen(this)">📞 Téléphone</div>
+            <div class="moyen-chip" data-val="Visite" onclick="selectMoyen(this)">🚶 Visite</div>
+            <div class="moyen-chip" data-val="Courrier" onclick="selectMoyen(this)">✉️ Courrier</div>
+          </div>
+          <input type="hidden" id="f-moyen" required>
+        </div>
+        <div class="field">
+          <label>Nom du contact (si connu)</label>
+          <input type="text" id="f-contact-nom" placeholder="M. / Mme ...">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">📷</span> Photo / Capture</div>
+        <div class="photo-zone" id="photo-zone">
+          <div style="font-size:32px">📸</div>
+          <p>Appuyez pour ajouter une photo ou capture d'écran</p>
+          <input type="file" id="f-photo" accept="image/*" onchange="handlePhoto(event)">
+        </div>
+        <img class="photo-preview" id="photo-preview" alt="Aperçu">
+        <div style="margin-top:8px; text-align:right; display:none" id="photo-del">
+          <button type="button" class="btn btn-sm"
+            style="background:var(--danger-light);color:var(--danger);border:none" onclick="clearPhoto()">🗑 Supprimer
+            la photo</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">💬</span> Réponse de l'entreprise</div>
+        <div class="field">
+          <label>Statut</label>
+          <div class="statut-group">
+            <div class="statut-chip" data-val="En attente" onclick="selectStatut(this,'sel-attente')">⏳ En attente</div>
+            <div class="statut-chip" data-val="Positive" onclick="selectStatut(this,'sel-positive')">✅ Positive</div>
+            <div class="statut-chip" data-val="Négative" onclick="selectStatut(this,'sel-negative')">❌ Négative</div>
+          </div>
+          <input type="hidden" id="f-statut" value="En attente">
+        </div>
+        <div class="field">
+          <label>Commentaire / Notes</label>
+          <textarea id="f-notes" placeholder="Réponse reçue, rendez-vous prévu, rappeler le..."></textarea>
+        </div>
+      </div>
+
+      <input type="hidden" id="f-id">
+      <button type="submit" class="btn btn-primary" style="margin-bottom:12px" id="btn-save">💾 Enregistrer la
+        fiche</button>
+      <button type="button" class="btn btn-outline" onclick="resetForm()">🔄 Vider le formulaire</button>
+      <div style="height:20px"></div>
+    </form>
+  </div>
+
+  <!-- ==================== EXPORT ==================== -->
+  <div id="tab-export" class="section">
+    <div class="eleve-input-zone">
+      <div class="card-title" style="margin-bottom:12px"><span class="icon">👤</span> Mon identité</div>
+      <div class="field">
+        <label>Prénom et Nom</label>
+        <input type="text" id="eleve-nom" placeholder="Ex: Marie Dupont" oninput="saveEleveInfo()">
+      </div>
+      <div class="field">
+        <label>Classe</label>
+        <input type="text" id="eleve-classe" placeholder="Ex: 2PMIA" oninput="saveEleveInfo()">
+      </div>
+    </div>
+
+    <div class="export-stats" id="export-stats"></div>
+
+    <div class="info-banner">
+      📁 L'export génère un fichier <strong>.json</strong> contenant toutes vos fiches. Vous pouvez l'envoyer par mail à
+      votre professeur ou le sauvegarder dans votre cloud.
+    </div>
+
+    <button class="btn btn-success" onclick="exportJSON()" style="margin-bottom:12px">
+      📤 Exporter mes fiches (.json)
+    </button>
+    <button class="btn btn-outline" onclick="exportTXT()" style="margin-bottom:12px">
+      📄 Exporter en texte (.txt)
+    </button>
+
+    <div class="card" style="margin-top:8px">
+      <div class="card-title" style="font-size:14px; margin-bottom:10px">📥 Importer des fiches</div>
+      <p style="font-size:13px;color:var(--gray-600);margin-bottom:10px">Pour restaurer un export ou fusionner plusieurs
+        fichiers.</p>
+      <div class="photo-zone" style="position:relative">
+        <div style="font-size:28px">📂</div>
+        <p>Sélectionner un fichier .json exporté</p>
+        <input type="file" accept=".json" onchange="importJSON(event)"
+          style="position:absolute;inset:0;opacity:0;cursor:pointer">
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <button class="btn btn-danger" onclick="confirmClear()">🗑 Effacer toutes les fiches</button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL DETAIL ==================== -->
+  <div class="modal-overlay" id="modal-detail">
+    <div class="modal">
+      <div class="modal-header">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div>
+          <div style="font-weight:700;font-size:16px" id="modal-nom">—</div>
+          <div style="font-size:12px;opacity:0.8" id="modal-date">—</div>
+        </div>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+  <script>
+    // ===== DATA =====
+    let fiches = JSON.parse(localStorage.getItem('fiches_bac') || '[]');
+    let currentFilter = 'tous';
+    let currentMapFilter = 'tous';
+    let map;
+    let marker;
+    let mainMap;
+    let markerClusterGroup;
+    let allMarkers = [];
+
+    function save() { localStorage.setItem('fiches_bac', JSON.stringify(fiches)); }
+    function saveEleveInfo() {
+      localStorage.setItem('eleve_nom', document.getElementById('eleve-nom').value);
+      localStorage.setItem('eleve_classe', document.getElementById('eleve-classe').value);
+      updateHeaderEleve();
+    }
+    function updateHeaderEleve() {
+      const n = localStorage.getItem('eleve_nom') || '';
+      const c = localStorage.getItem('eleve_classe') || '';
+      document.getElementById('header-eleve').textContent = n ? n + (c ? ' – ' + c : '') : '2PMIA – Recherche de stage/emploi';
+    }
+
+    
+    
+    // ===== SEARCH ENTREPRISE =====
+    let searchTimeout;
+
+    async function doSearchEntreprise() {
+
+      const query = document.getElementById('search-entreprise').value.trim();
+      const resultsDiv = document.getElementById('search-results');
+
+      if (query.length < 2) {
+        resultsDiv.style.display = 'none';
+        resultsDiv.innerHTML = '';
+        return;
+      }
+
+      try {
+
+        // Recherche par nom + catégories
+        const overpassQuery = `
+          [out:json][timeout:25];
+
+          (
+            node["name"~"${query}",i](45.0,5.4,45.8,6.4);
+            way["name"~"${query}",i](45.0,5.4,45.8,6.4);
+            relation["name"~"${query}",i](45.0,5.4,45.8,6.4);
+
+            node["shop"~"${query}",i](45.0,5.4,45.8,6.4);
+            way["shop"~"${query}",i](45.0,5.4,45.8,6.4);
+
+            node["amenity"~"${query}",i](45.0,5.4,45.8,6.4);
+            way["amenity"~"${query}",i](45.0,5.4,45.8,6.4);
+
+            node["office"~"${query}",i](45.0,5.4,45.8,6.4);
+            way["office"~"${query}",i](45.0,5.4,45.8,6.4);
+
+            node["craft"~"${query}",i](45.0,5.4,45.8,6.4);
+            way["craft"~"${query}",i](45.0,5.4,45.8,6.4);
+          );
+
+          out center tags;
+        `;
+
+        const response = await fetch(
+          'https://overpass-api.de/api/interpreter',
+          {
+            method: 'POST',
+            body: overpassQuery
+          }
+        );
+
+        const data = await response.json();
+
+        if (!data.elements) {
+          resultsDiv.style.display = 'none';
+          return;
+        }
+
+        const results = data.elements
+          .filter(el => el.tags)
+          .slice(0, 12);
+
+        resultsDiv.innerHTML = '';
+
+        if (results.length === 0) {
+
+          resultsDiv.innerHTML = `
+            <div class="search-result">
+              Aucun résultat trouvé
+            </div>
+          `;
+
+          resultsDiv.style.display = 'block';
+          return;
+        }
+
+        results.forEach(result => {
+
+          const tags = result.tags || {};
+
+          const adresse = [
+            tags["addr:housenumber"],
+            tags["addr:street"],
+            tags["addr:postcode"],
+            tags["addr:city"]
+          ].filter(Boolean).join(' ');
+
+          const secteur =
+            tags.shop ||
+            tags.amenity ||
+            tags.office ||
+            tags.craft ||
+            'Entreprise';
+
+          const div = document.createElement('div');
+
+          div.className = 'search-result';
+
+          div.innerHTML = `
+            <div style="font-weight:600">
+              ${tags.name || 'Entreprise'}
+            </div>
+
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px">
+              🏷️ ${secteur}
+            </div>
+
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px">
+              📍 ${adresse || 'Adresse inconnue'}
+            </div>
+          `;
+
+          div.onclick = () => selectEntreprise(result);
+
+          resultsDiv.appendChild(div);
+        });
+
+        resultsDiv.style.display = 'block';
+
+      } catch (error) {
+
+        console.error('Erreur recherche entreprise :', error);
+
+        resultsDiv.innerHTML = `
+          <div class="search-result">
+            Erreur lors de la recherche
+          </div>
+        `;
+
+        resultsDiv.style.display = 'block';
+      }
+    }
+
+    // Debounce
+    function searchEntreprise() {
+
+      clearTimeout(searchTimeout);
+
+      searchTimeout = setTimeout(() => {
+        doSearchEntreprise();
+      }, 400);
+    }
+
+    function selectEntreprise(result) {
+
+      const tags = result.tags || {};
+
+      const lat = result.lat || (result.center && result.center.lat);
+      const lon = result.lon || (result.center && result.center.lon);
+
+      document.getElementById('f-nom').value =
+        tags.name || '';
+
+      document.getElementById('f-adresse').value =
+        [
+          tags["addr:housenumber"],
+          tags["addr:street"],
+          tags["addr:postcode"],
+          tags["addr:city"]
+        ].filter(Boolean).join(' ');
+
+      document.getElementById('f-lat').value = lat || '';
+      document.getElementById('f-lon').value = lon || '';
+
+      document.getElementById('f-tel').value =
+        tags.phone ||
+        tags["contact:phone"] ||
+        '';
+
+      document.getElementById('f-email').value =
+        tags.email ||
+        tags["contact:email"] ||
+        '';
+
+      document.getElementById('f-secteur').value =
+        tags.shop ||
+        tags.amenity ||
+        tags.office ||
+        tags.craft ||
+        '';
+
+      document.getElementById('search-entreprise').value =
+        tags.name || '';
+
+      document.getElementById('search-results').style.display = 'none';
+
+      if (lat && lon) {
+        showMap(lat, lon);
+      }
+    }
+
+
+    function showMap(lat, lon) {
+      const mapDiv = document.getElementById('map');
+      if (!map) {
+        map = L.map('map').setView([lat, lon], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+      } else {
+        map.setView([lat, lon], 15);
+      }
+      if (marker) {
+        map.removeLayer(marker);
+      }
+      marker = L.marker([lat, lon]).addTo(map);
+      mapDiv.style.display = 'block';
+    }
+
+    // ===== TABS =====
+    function switchTab(tab, btn) {
+      document.querySelectorAll('.section').forEach(function (s) { s.classList.remove('active'); });
+      document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+      document.getElementById('tab-' + tab).classList.add('active');
+      if (btn) btn.classList.add('active');
+      if (tab === 'liste') renderListe();
+      if (tab === 'carte') initializeMainMap();
+      if (tab === 'export') renderExportStats();
+    }
+
+    // ===== MAIN MAP =====
+    function initializeMainMap() {
+      if (mainMap) { renderMainMap(); return; }
+      mainMap = L.map('main-map', { zoomControl: true }).setView([46.5, 2], 6);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+      }).addTo(mainMap);
+      markerClusterGroup = L.markerClusterGroup({ maxClusterRadius: 60 });
+      mainMap.addLayer(markerClusterGroup);
+      renderMainMap();
+      mainMap.on('click', function() { document.getElementById('map-search').blur(); });
+    }
+
+    function renderMainMap() {
+      if (!markerClusterGroup) return;
+      markerClusterGroup.clearLayers();
+      allMarkers = [];
+      let visibleCount = 0;
+      fiches.forEach(function(f) {
+        if (!f.lat || !f.lon) return;
+        if (currentMapFilter !== 'tous' && f.statut !== currentMapFilter) return;
+        visibleCount++;
+        const iconColor = f.statut === 'Positive' ? '#22c55e' : f.statut === 'Négative' ? '#ef4444' : '#f59e0b';
+        const icon = L.divIcon({
+          html: `<div style="background:${iconColor};width:28px;height:28px;border-radius:50%;border:3px solid var(--surface);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700">
+            ${f.statut === 'Positive' ? '✓' : f.statut === 'Négative' ? '✕' : '⏳'}
+          </div>`,
+          iconSize: [34, 34],
+          className: 'custom-div-icon'
+        });
+        const marker = L.marker([f.lat, f.lon], { icon: icon });
+        const popupContent = `
+          <div class="map-popup-content">
+            <div class="map-popup-title">${f.nom}</div>
+            ${f.adresse ? `<div class="map-popup-item"><div class="map-popup-item-label">Adresse:</div><div class="map-popup-item-value">${f.adresse}</div></div>` : ''}
+            ${f.tel ? `<div class="map-popup-item"><div class="map-popup-item-label">Tél:</div><div class="map-popup-item-value">${f.tel}</div></div>` : ''}
+            ${f.email ? `<div class="map-popup-item"><div class="map-popup-item-label">Email:</div><div class="map-popup-item-value">${f.email}</div></div>` : ''}
+            ${f.secteur ? `<div class="map-popup-item"><div class="map-popup-item-label">Secteur:</div><div class="map-popup-item-value">${f.secteur}</div></div>` : ''}
+            <div class="map-popup-item"><div class="map-popup-item-label">Statut:</div><div class="map-popup-item-value">${f.statut}</div></div>
+            <div class="map-popup-actions">
+              <button class="btn-view" onclick="openDetail('${f.id}')">Voir</button>
+              <button class="btn-edit" onclick="editFiche('${f.id}')">Éditer</button>
+            </div>
+          </div>
+        `;
+        marker.bindPopup(popupContent, { maxWidth: 250, className: 'custom-popup' });
+        markerClusterGroup.addLayer(marker);
+        allMarkers.push(marker);
+      });
+      document.getElementById('map-stats-count').textContent = visibleCount;
+    }
+
+    function setMapFilter(filter, btn) {
+      currentMapFilter = filter;
+      document.querySelectorAll('.map-filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderMainMap();
+    }
+
+    function handleMapSearch() {
+      const query = document.getElementById('map-search').value.trim();
+      const dropdown = document.getElementById('map-search-dropdown');
+      if (query.length < 2) { dropdown.classList.remove('show'); return; }
+      
+      const results = fiches.filter(f => {
+        const q = query.toLowerCase();
+        return f.nom.toLowerCase().includes(q) || 
+               (f.secteur && f.secteur.toLowerCase().includes(q)) ||
+               (f.adresse && f.adresse.toLowerCase().includes(q));
+      }).slice(0, 8);
+      
+      if (results.length === 0) { 
+        dropdown.classList.remove('show'); 
+        return; 
+      }
+      
+      dropdown.innerHTML = results.map(f => `
+        <div class="search-dropdown-item" onclick="searchMapResultClick('${f.id}')">
+          <div class="item-title">${f.nom}</div>
+          <div class="item-meta">${f.secteur || ''}${f.adresse ? ' • ' + f.adresse.split(',')[0] : ''}</div>
+        </div>
+      `).join('');
+      dropdown.classList.add('show');
+    }
+
+    function searchMapResultClick(id) {
+      const f = fiches.find(x => x.id === id);
+      if (!f || !f.lat || !f.lon) return;
+      document.getElementById('map-search').value = f.nom;
+      document.getElementById('map-search-dropdown').classList.remove('show');
+      mainMap.setView([f.lat, f.lon], 14);
+      const marker = allMarkers.find(m => m.getLatLng().lat == f.lat && m.getLatLng().lng == f.lon);
+      if (marker) { setTimeout(() => marker.openPopup(), 300); }
+    }
+
+    // ===== MOYEN / STATUT CHIPS =====
+    function selectMoyen(el) {
+      document.querySelectorAll('.moyen-chip').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      document.getElementById('f-moyen').value = el.dataset.val;
+    }
+    function selectStatut(el, cls) {
+      document.querySelectorAll('.statut-chip').forEach(c => c.classList.remove('sel-attente', 'sel-positive', 'sel-negative'));
+      el.classList.add(cls);
+      document.getElementById('f-statut').value = el.dataset.val;
+    }
+
+    // ===== PHOTO =====
+    function handlePhoto(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const prev = document.getElementById('photo-preview');
+        prev.src = ev.target.result;
+        prev.style.display = 'block';
+        document.getElementById('photo-del').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+    function clearPhoto() {
+      document.getElementById('f-photo').value = '';
+      document.getElementById('photo-preview').style.display = 'none';
+      document.getElementById('photo-preview').src = '';
+      document.getElementById('photo-del').style.display = 'none';
+    }
+
+    // ===== FORM =====
+    function resetForm() {
+      document.getElementById('f-id').value = '';
+      document.getElementById('search-entreprise').value = '';
+      document.getElementById('f-nom').value = '';
+      document.getElementById('f-adresse').value = '';
+      document.getElementById('f-lat').value = '';
+      document.getElementById('f-lon').value = '';
+      document.getElementById('map').style.display = 'none';
+      document.getElementById('f-tel').value = '';
+      document.getElementById('f-email').value = '';
+      document.getElementById('f-secteur').value = '';
+      document.getElementById('f-date').value = '';
+      document.getElementById('f-moyen').value = '';
+      document.getElementById('f-contact-nom').value = '';
+      document.getElementById('f-notes').value = '';
+      document.getElementById('f-statut').value = 'En attente';
+      document.querySelectorAll('.moyen-chip').forEach(c => c.classList.remove('selected'));
+      document.querySelectorAll('.statut-chip').forEach(c => c.classList.remove('sel-attente', 'sel-positive', 'sel-negative'));
+      clearPhoto();
+      document.getElementById('btn-save').textContent = '💾 Enregistrer la fiche';
+    }
+
+    function saveFiche(e) {
+      e.preventDefault();
+      const moyen = document.getElementById('f-moyen').value;
+      if (!moyen) { showToast('⚠️ Choisissez un moyen de contact'); return; }
+      const id = document.getElementById('f-id').value || Date.now().toString();
+      const photo = document.getElementById('photo-preview').src || '';
+      const fiche = {
+        id, nom: document.getElementById('f-nom').value.trim(),
+        adresse: document.getElementById('f-adresse').value.trim(),
+        lat: document.getElementById('f-lat').value.trim(),
+        lon: document.getElementById('f-lon').value.trim(),
+        tel: document.getElementById('f-tel').value.trim(),
+        email: document.getElementById('f-email').value.trim(),
+        secteur: document.getElementById('f-secteur').value.trim(),
+        date: document.getElementById('f-date').value,
+        moyen, contactNom: document.getElementById('f-contact-nom').value.trim(),
+        statut: document.getElementById('f-statut').value || 'En attente',
+        notes: document.getElementById('f-notes').value.trim(),
+        photo: photo.startsWith('data:') ? photo : '',
+        createdAt: new Date().toISOString()
+      };
+      const idx = fiches.findIndex(f => f.id === id);
+      if (idx >= 0) { fiches[idx] = fiche; showToast('✏️ Fiche modifiée !'); }
+      else { fiches.unshift(fiche); showToast('✅ Fiche enregistrée !'); }
+      save(); 
+      if (mainMap && markerClusterGroup) renderMainMap();
+      resetForm();
+      // Go to liste
+      switchTab('liste', document.querySelectorAll('.tab-btn')[0]);
+    }
+
+    // ===== LISTE =====
+    function setFilter(f, el) {
+      currentFilter = f;
+      document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      renderListe();
+    }
+
+    function renderListe() {
+      const searchEl = document.querySelector('.search-bar');
+      const search = (searchEl ? searchEl.value : '').toLowerCase();
+      let items = fiches.filter(function (f) {
+        if (currentFilter !== 'tous' && f.statut !== currentFilter) return false;
+        var nom = f.nom ? f.nom.toLowerCase() : '';
+        var secteur = f.secteur ? f.secteur.toLowerCase() : '';
+        var adresse = f.adresse ? f.adresse.toLowerCase() : '';
+        if (search && !nom.includes(search) && !secteur.includes(search) && !adresse.includes(search)) return false;
+        return true;
+      });
+      const c = document.getElementById('liste-container');
+      if (!items.length) {
+        c.innerHTML = `<div class="empty-state"><div class="big">🏢</div><p>Aucune fiche trouvée.<br>Appuyez sur <strong>Ajouter</strong> pour commencer !</p></div>`;
+        return;
+      }
+      c.innerHTML = items.map(f => {
+        const statClass = 'statut-' + f.statut.replace(' ', '_');
+        const badgeCls = f.statut === 'Positive' ? 'badge-positive' : f.statut === 'Négative' ? 'badge-negative' : 'badge-attente';
+        const statEmoji = f.statut === 'Positive' ? '✅' : f.statut === 'Négative' ? '❌' : '⏳';
+        const dateStr = f.date ? new Date(f.date).toLocaleDateString('fr-FR') : '—';
+        return `<div class="fiche-item ${statClass}" onclick="openDetail('${f.id}')">
+      <div class="fiche-nom">${f.nom}</div>
+      <div class="fiche-meta">
+        <span>📅 ${dateStr}</span>
+        ${f.adresse ? '<span>📍 ' + f.adresse.split(',')[0] + '</span>' : ''}
+        ${f.secteur ? '<span>🔧 ' + f.secteur + '</span>' : ''}
+      </div>
+      <div style="margin-top:6px">
+        <span class="fiche-badge badge-moyen">${f.moyen || '—'}</span>
+        <span class="fiche-badge ${badgeCls}">${statEmoji} ${f.statut}</span>
+      </div>
+    </div>`;
+      }).join('');
+    }
+
+    // ===== DETAIL MODAL =====
+    function openDetail(id) {
+      const f = fiches.find(x => x.id === id);
+      if (!f) return;
+      document.getElementById('modal-nom').textContent = f.nom;
+      document.getElementById('modal-date').textContent = f.date ? '📅 ' + new Date(f.date).toLocaleDateString('fr-FR') : '';
+      const badgeCls = f.statut === 'Positive' ? 'badge-positive' : f.statut === 'Négative' ? 'badge-negative' : 'badge-attente';
+      const statEmoji = f.statut === 'Positive' ? '✅' : f.statut === 'Négative' ? '❌' : '⏳';
+      document.getElementById('modal-body').innerHTML = `
+    <div class="detail-row"><div class="detail-label">Statut</div><span class="fiche-badge ${badgeCls}" style="font-size:14px;padding:4px 12px">${statEmoji} ${f.statut}</span></div>
+    <div class="detail-sep"></div>
+    ${f.adresse ? `<div class="detail-row"><div class="detail-label">Adresse</div><div class="detail-val">📍 ${f.adresse}</div></div>` : ''}
+    ${f.lat && f.lon ? `<div class="detail-row"><div class="detail-label">Coordonnées</div><div class="detail-val">Lat: ${f.lat}, Lon: ${f.lon}</div></div>` : ''}
+    ${f.tel ? `<div class="detail-row"><div class="detail-label">Téléphone</div><div class="detail-val"><a href="tel:${f.tel}" style="color:var(--primary)">📞 ${f.tel}</a></div></div>` : ''}
+    ${f.email ? `<div class="detail-row"><div class="detail-label">Email</div><div class="detail-val"><a href="mailto:${f.email}" style="color:var(--primary)">📧 ${f.email}</a></div></div>` : ''}
+    ${f.secteur ? `<div class="detail-row"><div class="detail-label">Secteur</div><div class="detail-val">${f.secteur}</div></div>` : ''}
+    ${f.contactNom ? `<div class="detail-row"><div class="detail-label">Contact</div><div class="detail-val">👤 ${f.contactNom}</div></div>` : ''}
+    <div class="detail-sep"></div>
+    <div class="detail-row"><div class="detail-label">Moyen de contact</div><div class="detail-val"><span class="fiche-badge badge-moyen" style="font-size:13px">${f.moyen || '—'}</span></div></div>
+    ${f.notes ? `<div class="detail-row" style="margin-top:8px"><div class="detail-label">Notes / Réponse</div><div class="detail-val" style="white-space:pre-wrap;background:var(--surface-2);padding:10px;border-radius:8px;margin-top:4px">${f.notes}</div></div>` : ''}
+    ${f.photo ? `<div class="detail-sep"></div><div class="detail-label">Photo</div><img src="${f.photo}" style="width:100%;border-radius:8px;margin-top:8px" alt="capture">` : ''}
+    <div class="detail-sep"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-outline btn-sm" style="flex:1" onclick="editFiche('${f.id}')">✏️ Modifier</button>
+      <button class="btn btn-sm" style="flex:1;background:var(--danger-light);color:var(--danger);border:none" onclick="deleteFiche('${f.id}')">🗑 Supprimer</button>
+    </div>
+  `;
+      document.getElementById('modal-detail').classList.add('open');
+    }
+    function closeModal() { document.getElementById('modal-detail').classList.remove('open'); }
+
+    function editFiche(id) {
+      const f = fiches.find(x => x.id === id);
+      if (!f) return;
+      closeModal();
+      resetForm();
+      document.getElementById('f-id').value = f.id;
+      document.getElementById('f-nom').value = f.nom;
+      document.getElementById('f-adresse').value = f.adresse;
+      document.getElementById('f-lat').value = f.lat || '';
+      document.getElementById('f-lon').value = f.lon || '';
+      if (f.lat && f.lon) showMap(f.lat, f.lon);
+      document.getElementById('f-tel').value = f.tel;
+      document.getElementById('f-email').value = f.email;
+      document.getElementById('f-secteur').value = f.secteur;
+      document.getElementById('f-date').value = f.date;
+      document.getElementById('f-contact-nom').value = f.contactNom || '';
+      document.getElementById('f-notes').value = f.notes;
+      document.getElementById('f-statut').value = f.statut;
+      document.getElementById('f-moyen').value = f.moyen;
+      document.querySelectorAll('.moyen-chip').forEach(c => { if (c.dataset.val === f.moyen) c.classList.add('selected'); });
+      const statCls = f.statut === 'Positive' ? 'sel-positive' : f.statut === 'Négative' ? 'sel-negative' : 'sel-attente';
+      document.querySelectorAll('.statut-chip').forEach(c => { if (c.dataset.val === f.statut) c.classList.add(statCls); });
+      if (f.photo) {
+        document.getElementById('photo-preview').src = f.photo;
+        document.getElementById('photo-preview').style.display = 'block';
+        document.getElementById('photo-del').style.display = 'block';
+      }
+      document.getElementById('btn-save').textContent = '💾 Modifier la fiche';
+      switchTab('ajout', document.querySelectorAll('.tab-btn')[1]);
+      window.scrollTo(0, 0);
+    }
+
+    function deleteFiche(id) {
+      if (!confirm('Supprimer cette fiche ?')) return;
+      fiches = fiches.filter(f => f.id !== id);
+      save(); closeModal(); renderListe(); 
+      if (mainMap && markerClusterGroup) renderMainMap();
+      showToast('🗑 Fiche supprimée');
+    }
+
+    // ===== EXPORT =====
+    function renderExportStats() {
+      const total = fiches.length;
+      const positives = fiches.filter(f => f.statut === 'Positive').length;
+      const negatives = fiches.filter(f => f.statut === 'Négative').length;
+      const attente = fiches.filter(f => f.statut === 'En attente').length;
+      document.getElementById('export-stats').innerHTML = `
+    <div class="stat-box"><div class="num">${total}</div><div class="lbl">Fiches totales</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--success)">${positives}</div><div class="lbl">Réponses positives</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--warning)">${attente}</div><div class="lbl">En attente</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--danger)">${negatives}</div><div class="lbl">Réponses négatives</div></div>
+  `;
+      document.getElementById('eleve-nom').value = localStorage.getItem('eleve_nom') || '';
+      document.getElementById('eleve-classe').value = localStorage.getItem('eleve_classe') || '';
+    }
+
+    function exportJSON() {
+      // Créer une copie des fiches sans les photos pour réduire la taille du fichier
+      const fichesSansPhotos = fiches.map(function (fiche) {
+        var f = {};
+        for (var k in fiche) { if (k !== 'photo') f[k] = fiche[k]; }
+        return f;
+      });
+
+      const data = {
+        eleve: { nom: localStorage.getItem('eleve_nom') || '', classe: localStorage.getItem('eleve_classe') || '' },
+        exportDate: new Date().toISOString(),
+        fiches: fichesSansPhotos
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const nom = (localStorage.getItem('eleve_nom') || 'fiches').replace(/\s+/g, '_');
+      a.href = url;
+      a.download = 'suivi_entreprises_' + nom + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      showToast('📤 Export réussi !');
+    }
+
+    function exportTXT() {
+      const nom = localStorage.getItem('eleve_nom') || '';
+      const classe = localStorage.getItem('eleve_classe') || '';
+      let txt = "SUIVI DES RECHERCHES D'ENTREPRISE\n";
+      txt += nom ? 'Élève : ' + nom + '\n' : '';
+      txt += classe ? 'Classe : ' + classe + '\n' : '';
+      txt += 'Exporté le : ' + new Date().toLocaleDateString('fr-FR') + '\n';
+      txt += 'Nombre de fiches : ' + fiches.length + '\n';
+      txt += '==================================================\n\n';
+      fiches.forEach(function (f, i) {
+        txt += 'FICHE ' + (i + 1) + ' \u2013 ' + f.nom + '\n';
+        txt += '------------------------------------------\n';
+        if (f.adresse) txt += 'Adresse : ' + f.adresse + '\n';
+        if (f.lat && f.lon) txt += 'Coordonn\u00e9es : Lat ' + f.lat + ', Lon ' + f.lon + '\n';
+        if (f.tel) txt += 'T\u00e9l : ' + f.tel + '\n';
+        if (f.email) txt += 'Email : ' + f.email + '\n';
+        if (f.secteur) txt += 'Secteur : ' + f.secteur + '\n';
+        txt += 'Date de contact : ' + (f.date ? new Date(f.date).toLocaleDateString('fr-FR') : '\u2014') + '\n';
+        txt += 'Moyen : ' + (f.moyen || '\u2014') + '\n';
+        if (f.contactNom) txt += 'Contact : ' + f.contactNom + '\n';
+        txt += 'Statut : ' + f.statut + '\n';
+        if (f.notes) txt += 'Notes : ' + f.notes + '\n';
+        txt += '\n';
+      });
+      const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'suivi_entreprises.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      showToast('📄 Export texte réussi !');
+    }
+
+    function importJSON(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          const imported = data.fiches || data;
+          if (!Array.isArray(imported)) throw new Error();
+          const replace = confirm('Voulez-vous remplacer toutes les fiches existantes ? (OK pour remplacer, Annuler pour fusionner)');
+          if (replace) {
+            fiches = imported;
+            showToast('✅ Toutes les fiches remplacées !');
+          } else {
+            let added = 0;
+            imported.forEach(f => {
+              if (!fiches.find(x => x.id === f.id)) { fiches.unshift(f); added++; }
+            });
+            showToast(`✅ ${added} fiche(s) importée(s) !`);
+          }
+          if (data.eleve) {
+            if (data.eleve.nom) { document.getElementById('eleve-nom').value = data.eleve.nom; localStorage.setItem('eleve_nom', data.eleve.nom); }
+            if (data.eleve.classe) { document.getElementById('eleve-classe').value = data.eleve.classe; localStorage.setItem('eleve_classe', data.eleve.classe); }
+          }
+          save(); updateHeaderEleve(); renderExportStats(); renderListe();
+        } catch { showToast('❌ Fichier invalide'); }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    }
+
+    function confirmClear() {
+      if (confirm('⚠️ Effacer TOUTES les fiches ? Cette action est irréversible.')) {
+        fiches = []; save(); renderExportStats(); showToast('🗑 Toutes les fiches supprimées');
+      }
+    }
+
+    // ===== TOAST =====
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    // ===== INIT =====
+    document.getElementById('f-date').valueAsDate = new Date();
+    selectStatut(document.querySelector('.statut-chip'), 'sel-attente');
+    updateHeaderEleve();
+    renderListe();
+  </script>
+</body>
+
+</html>
