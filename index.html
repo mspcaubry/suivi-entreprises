@@ -990,7 +990,7 @@
           <button class="map-filter-btn active" data-filter="tous" onclick="setMapFilter('tous', this)">Toutes</button>
           <button class="map-filter-btn" data-filter="En attente" onclick="setMapFilter('En attente', this)">⏳</button>
           <button class="map-filter-btn" data-filter="Positive" onclick="setMapFilter('Positive', this)">✅</button>
-          <button class="map-filter-btn" data-filter="Négative" onclick="setMapFilter('Negative', this)">❌</button>
+          <button class="map-filter-btn" data-filter="Négative" onclick="setMapFilter('Négative', this)">❌</button>
         </div>
         <div class="map-stats"><span id="map-stats-count">0</span> entreprises visibles</div>
       </div>
@@ -1203,6 +1203,35 @@
       document.getElementById('header-eleve').textContent = n ? n + (c ? ' – ' + c : '') : '2PMIA – Recherche de stage/emploi';
     }
 
+    async function fetchCoordinates(address) {
+      if (!address) return null;
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&addressdetails=1&countrycodes=fr`;
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        const data = await response.json();
+        if (!Array.isArray(data) || !data.length) return null;
+        return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+      } catch (error) {
+        console.error('Erreur géocodage adresse :', error);
+        return null;
+      }
+    }
+
+    async function ensureMissingCoordinates() {
+      let updated = false;
+      for (const fiche of fiches) {
+        if ((!fiche.lat || !fiche.lon) && fiche.adresse) {
+          const coords = await fetchCoordinates(fiche.adresse);
+          if (coords) {
+            fiche.lat = coords.lat;
+            fiche.lon = coords.lon;
+            updated = true;
+          }
+        }
+      }
+      if (updated) save();
+    }
 
 
     // ===== SEARCH ENTREPRISE =====
@@ -1429,7 +1458,8 @@
     }
 
     // ===== MAIN MAP =====
-    function initializeMainMap() {
+    async function initializeMainMap() {
+      await ensureMissingCoordinates();
       if (mainMap) { renderMainMap(); return; }
       mainMap = L.map('main-map', { zoomControl: true }).setView([46.5, 2], 6);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1460,6 +1490,7 @@
           className: 'custom-div-icon'
         });
         const marker = L.marker([f.lat, f.lon], { icon: icon });
+        marker.ficheId = f.id;
         const popupContent = `
           <div class="map-popup-content">
             <div class="map-popup-title">${f.nom}</div>
@@ -1520,7 +1551,7 @@
       document.getElementById('map-search').value = f.nom;
       document.getElementById('map-search-dropdown').classList.remove('show');
       mainMap.setView([f.lat, f.lon], 14);
-      const marker = allMarkers.find(m => m.getLatLng().lat == f.lat && m.getLatLng().lng == f.lon);
+      const marker = allMarkers.find(m => m.ficheId === f.id);
       if (marker) { setTimeout(() => marker.openPopup(), 300); }
     }
 
@@ -1579,17 +1610,31 @@
       document.getElementById('btn-save').textContent = '💾 Enregistrer la fiche';
     }
 
-    function saveFiche(e) {
+    async function saveFiche(e) {
       e.preventDefault();
       const moyen = document.getElementById('f-moyen').value;
       if (!moyen) { showToast('⚠️ Choisissez un moyen de contact'); return; }
       const id = document.getElementById('f-id').value || Date.now().toString();
       const photo = document.getElementById('photo-preview').src || '';
+      let adresse = document.getElementById('f-adresse').value.trim();
+      let lat = document.getElementById('f-lat').value.trim();
+      let lon = document.getElementById('f-lon').value.trim();
+      if ((!lat || !lon) && adresse) {
+        const coords = await fetchCoordinates(adresse);
+        if (coords) {
+          lat = coords.lat.toString();
+          lon = coords.lon.toString();
+          document.getElementById('f-lat').value = lat;
+          document.getElementById('f-lon').value = lon;
+        } else {
+          showToast('⚠️ Adresse introuvable. La fiche est enregistrée sans position sur la carte.');
+        }
+      }
       const fiche = {
         id, nom: document.getElementById('f-nom').value.trim(),
-        adresse: document.getElementById('f-adresse').value.trim(),
-        lat: document.getElementById('f-lat').value.trim(),
-        lon: document.getElementById('f-lon').value.trim(),
+        adresse: adresse,
+        lat: lat,
+        lon: lon,
         tel: document.getElementById('f-tel').value.trim(),
         email: document.getElementById('f-email').value.trim(),
         secteur: document.getElementById('f-secteur').value.trim(),
